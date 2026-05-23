@@ -1,0 +1,8 @@
+﻿<connectionStrings>
+	<add name="bdControlAcceso"
+         connectionString="Server=localhost;Database=control_acceso;Uid=root;Pwd=root;"
+         providerName="MySql.Data.MySqlClient"/>
+	<add name="bdControlAccesoAWS"
+         connectionString="Server=;Database=;Uid=;Pwd=;"
+         providerName="MySql.Data.MySqlClient" />
+</connectionStrings>
