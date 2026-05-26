@@ -9,7 +9,7 @@ namespace apiHelpDesk.Models
 {
     public class clsCheckBd
     {
-        private string cadConn = ConfigurationManager.ConnectionStrings["bdHelpDesk"].ConnectionString;
+        private string cadConn = ConfigurationManager.ConnectionStrings["bdHelpDeskAWS"].ConnectionString;
 
         public string statusMsg;
         public int flag;

@@ -14,7 +14,7 @@ namespace apiHelpDesk.Models
 
     public class clsIncidencias
     {
-        private string cadConn = ConfigurationManager.ConnectionStrings["bdHelpDesk"].ConnectionString;
+        private string cadConn = ConfigurationManager.ConnectionStrings["bdHelpDeskAWS"].ConnectionString;
 
         public int id { get; set; }
         public int idUsuario { get; set; }
@@ -47,32 +47,29 @@ namespace apiHelpDesk.Models
                 throw new Exception("El ID de usuario " + this.idUsuario + " no existe en la base de datos.");
             }
 
+            // Ajuste para el valor 'En proceso' que contiene un espacio en la BD
             string estadoDB = this.status.ToString().Replace("_", " ");
+
+            // Creación del comando SQL corregido utilizando las propiedades de la instancia   
+            string cadSql = "CALL spRegistrarIncidencia("
+                                               + this.idUsuario + ", '"
+                                               + this.titulo + "', '"
+                                               + this.descripcion + "', '"
+                                               + this.categoria + "', '"
+                                               + this.prioridad + "', '"
+                                               + estadoDB + "', '"
+                                               + this.observaciones + "');";
 
             try
             {
+                // Configuración de los objetos de conexión a MySQL
                 using (MySqlConnection cnn = new MySqlConnection(cadConn))
                 {
-                    // Usamos parámetros (?nome) para evitar inyección SQL al llamar al procedimiento
-                    string cadSql = "CALL spRegistrarIncidencia(?p_id_usuario, ?p_titulo, ?p_descripcion, ?p_categoria, ?p_prioridad, ?p_estado, ?p_observaciones);";
-
-                    using (MySqlCommand cmd = new MySqlCommand(cadSql, cnn))
-                    {
-                        cmd.Parameters.AddWithValue("?p_id_usuario", this.idUsuario);
-                        cmd.Parameters.AddWithValue("?p_titulo", this.titulo);
-                        cmd.Parameters.AddWithValue("?p_descripcion", this.descripcion);
-                        cmd.Parameters.AddWithValue("?p_categoria", this.categoria.ToString());
-                        cmd.Parameters.AddWithValue("?p_prioridad", this.prioridad.ToString());
-                        cmd.Parameters.AddWithValue("?p_estado", estadoDB);
-                        cmd.Parameters.AddWithValue("?p_observaciones", this.observaciones);
-
-                        using (MySqlDataAdapter da = new MySqlDataAdapter(cmd))
-                        {
-                            DataSet ds = new DataSet();
-                            da.Fill(ds, "spRegistrarIncidencia");
-                            return ds;
-                        }
-                    }
+                    MySqlDataAdapter da = new MySqlDataAdapter(cadSql, cnn);
+                    DataSet ds = new DataSet();
+                    // Ejecución del Adaptador de Datos
+                    da.Fill(ds, "spRegistrarIncidencia");
+                    return ds;
                 }
             }
             catch (Exception ex)
@@ -85,27 +82,22 @@ namespace apiHelpDesk.Models
         {
             string cadSQL = "select * from vwPanelIncidencias";
 
-            // Añadido 'using' para asegurar el cierre de la conexión
-            using (MySqlConnection cnn = new MySqlConnection(cadConn))
-            using (MySqlDataAdapter da = new MySqlDataAdapter(cadSQL, cnn))
-            {
-                DataSet ds = new DataSet();
-                da.Fill(ds, "vwPanelIncidencias");
-                return ds;
-            }
+            MySqlConnection cnn = new MySqlConnection(cadConn);
+            MySqlDataAdapter da = new MySqlDataAdapter(cadSQL, cnn);
+            DataSet ds = new DataSet();
+            da.Fill(ds, "vwPanelIncidencias");
+            return ds;
         }
 
         public DataSet vwMetricasEstado()
         {
             string cadSQL = "select * from vwMetricasEstado";
 
-            using (MySqlConnection cnn = new MySqlConnection(cadConn))
-            using (MySqlDataAdapter da = new MySqlDataAdapter(cadSQL, cnn))
-            {
-                DataSet ds = new DataSet();
-                da.Fill(ds, "vwMetricasEstado");
-                return ds;
-            }
+            MySqlConnection cnn = new MySqlConnection(cadConn);
+            MySqlDataAdapter da = new MySqlDataAdapter(cadSQL, cnn);
+            DataSet ds = new DataSet();
+            da.Fill(ds, "vwMetricasEstado");
+            return ds;
         }
 
         public DataSet ObtenerIncidenciaPorId(int idIncidencia)
@@ -131,24 +123,25 @@ namespace apiHelpDesk.Models
         {
             string estadoDB = this.status.ToString().Replace("_", " ");
 
-            // Corregido con parámetros seguros
-            string cadSQL = @"UPDATE incidencias 
-                              SET estado = ?estado, observaciones = ?observaciones 
-                              WHERE id_incidencia = ?id;";
+            // Uso del procedimiento almacenado spActualizarEstadoIncidencia
+            string cadSQL = "CALL spActualizarEstadoIncidencia(" 
+                            + this.id + ", '" 
+                            + estadoDB + "', '" 
+                            + this.observaciones + "');";
 
-            using (MySqlConnection cnn = new MySqlConnection(cadConn))
-            using (MySqlCommand cmd = new MySqlCommand(cadSQL, cnn))
+            try
             {
-                cmd.Parameters.AddWithValue("?estado", estadoDB);
-                cmd.Parameters.AddWithValue("?observaciones", this.observaciones);
-                cmd.Parameters.AddWithValue("?id", this.id);
-
-                using (MySqlDataAdapter da = new MySqlDataAdapter(cmd))
+                using (MySqlConnection cnn = new MySqlConnection(cadConn))
                 {
+                    MySqlDataAdapter da = new MySqlDataAdapter(cadSQL, cnn);
                     DataSet ds = new DataSet();
                     da.Fill(ds, "updateEstado");
                     return ds;
                 }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error en BD (Actualizar Estado): " + ex.Message);
             }
         }
     }

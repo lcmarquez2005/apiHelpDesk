@@ -34,7 +34,7 @@ namespace apiHelpDesk.Models
 
         // Definición de cadena de Conexión
         private string cadConn = ConfigurationManager.
-                    ConnectionStrings["bdHelpDesk"].
+                    ConnectionStrings["bdHelpDeskAWS"].
                     ConnectionString;
 
         // Definición de Constructores del Modelo
@@ -135,7 +135,7 @@ namespace apiHelpDesk.Models
             catch (Exception ex)
             {
                 // Lanzamos la excepción para que el controlador la capture y nos muestre el error real de MySQL
-                throw new Exception("Error al validar usuario: " + ex.Message + " (Verifique si la tabla 'tbl_usuario' y la columna 'id_usuario' son correctas)");
+                throw new Exception("Error al validar usuario: " + ex.Message);
             }
         }
 
@@ -199,27 +199,13 @@ namespace apiHelpDesk.Models
 
             try
             {
-                // Consulta segura usando parámetros
-                string cadSQL = @"SELECT 
-                            id_usuario,
-                            nombre_completo,
-                            correo_institucional,
-                            usuario,
-                            password_hash,
-                            rol,
-                            activo
-                          FROM usuarios
-                          WHERE usuario = ?usuario";
+                // Uso del procedimiento almacenado spLoginUsuario siguiendo la misma sintaxis
+                string cadSQL = "CALL spLoginUsuario('" + this.usuario + "');";
 
                 using (MySqlConnection cnn = new MySqlConnection(cadConn))
-                using (MySqlCommand cmd = new MySqlCommand(cadSQL, cnn))
                 {
-                    cmd.Parameters.AddWithValue("?usuario", this.usuario);
-
-                    using (MySqlDataAdapter da = new MySqlDataAdapter(cmd))
-                    {
-                        da.Fill(ds, "usuario");
-                    }
+                    MySqlDataAdapter da = new MySqlDataAdapter(cadSQL, cnn);
+                    da.Fill(ds, "usuario");
                 }
 
                 // Verificar si encontró usuario
