@@ -34,7 +34,7 @@ namespace apiHelpDesk.Models
 
         // Definición de cadena de Conexión
         private string cadConn = ConfigurationManager.
-                    ConnectionStrings["bdHelpDeskAWS"].
+                    ConnectionStrings["bdHelpDesk"].
                     ConnectionString;
 
         // Definición de Constructores del Modelo
@@ -190,6 +190,59 @@ namespace apiHelpDesk.Models
             catch
             {
                 return false;
+            }
+        }
+
+        public DataSet Login()
+        {
+            DataSet ds = new DataSet();
+
+            try
+            {
+                // Consulta segura usando parámetros
+                string cadSQL = @"SELECT 
+                            id_usuario,
+                            nombre_completo,
+                            correo_institucional,
+                            usuario,
+                            password_hash,
+                            rol,
+                            activo
+                          FROM usuarios
+                          WHERE usuario = ?usuario";
+
+                using (MySqlConnection cnn = new MySqlConnection(cadConn))
+                using (MySqlCommand cmd = new MySqlCommand(cadSQL, cnn))
+                {
+                    cmd.Parameters.AddWithValue("?usuario", this.usuario);
+
+                    using (MySqlDataAdapter da = new MySqlDataAdapter(cmd))
+                    {
+                        da.Fill(ds, "usuario");
+                    }
+                }
+
+                // Verificar si encontró usuario
+                if (ds.Tables[0].Rows.Count > 0)
+                {
+                    string hashGuardado =
+                        ds.Tables[0].Rows[0]["password_hash"].ToString();
+
+                    bool passwordCorrecto =
+                        ValidatePassword(this.password, hashGuardado);
+
+                    // Si password incorrecto limpiamos resultados
+                    if (!passwordCorrecto)
+                    {
+                        ds.Tables[0].Rows.Clear();
+                    }
+                }
+
+                return ds;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error en login: " + ex.Message);
             }
         }
 

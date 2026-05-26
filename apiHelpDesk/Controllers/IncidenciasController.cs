@@ -1,69 +1,105 @@
 using apiHelpDesk.Models;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Web.Http;
 
 namespace apiHelpDesk.Controllers
 {
+    [RoutePrefix("api/incidencias")]
     public class IncidenciasController : ApiController
     {
         [HttpPost]
-        [Route("full/incidencias")]
-        public clsApiStatus spRegistrarIncidencia([FromBody] clsIncidencias modelo)
+        [Route("")]
+        public clsApiStatus RegistrarIncidencia(clsIncidencias model)
         {
             clsApiStatus objRespuesta = new clsApiStatus();
-            JObject jsonResp = new JObject();
-
             try
             {
-                // Creación del objeto basado en el modelo recibido
-                // El constructor asegura que se respeten los tipos (incluyendo enums)
-                clsIncidencias objIncidencia = new clsIncidencias(
-                    modelo.idUsuario,
-                    modelo.titulo,
-                    modelo.descripcion,
-                    modelo.categoria,
-                    modelo.prioridad,
-                    modelo.status,
-                    modelo.observaciones
-                );
-
-                // Ejecución del método del modelo
-                DataSet ds = objIncidencia.spRegistrarIncidencia();
-
-                // Validación de resultados de la BD
-                if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
-                {
-                    objRespuesta.statusExec = true;
-                    objRespuesta.msg = "Incidencia registrada exitosamente!";
-                    objRespuesta.flag = int.Parse(ds.Tables[0].Rows[0][0].ToString());
-                    jsonResp.Add("msgData", "Incidencia registrada correctamente.");
-                }
-                else
-                {
-                    // Algunos SP de registro pueden no devolver una tabla si no se configura un SELECT
-                    objRespuesta.statusExec = true;
-                    objRespuesta.msg = "Incidencia registrada (sin confirmación de ID).";
-                    objRespuesta.flag = 1;
-                    jsonResp.Add("msgData", "El registro se completó pero la BD no devolvió un ID.");
-                }
-                objRespuesta.datos = jsonResp;
+                DataSet ds = model.spRegistrarIncidencia();
+                objRespuesta.statusExec = true;
+                objRespuesta.msg = "Incidencia registrada correctamente";
+                objRespuesta.flag = 1;
+                objRespuesta.datos = JObject.FromObject(ds);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 objRespuesta.statusExec = false;
-                objRespuesta.msg = "Error al registrar la incidencia.";
-                objRespuesta.flag = -1;
-                jsonResp.Add("msgData", e.Message);
-                objRespuesta.datos = jsonResp;
+                objRespuesta.msg = ex.Message;
+                objRespuesta.flag = 0;
             }
+            return objRespuesta;
+        }
 
+        [HttpGet]
+        [Route("")]
+        public clsApiStatus ObtenerIncidencias()
+        {
+            clsApiStatus objRespuesta = new clsApiStatus();
+            try
+            {
+                clsIncidencias obj = new clsIncidencias();
+                DataSet ds = obj.vwPanelIncidencias();
+
+                objRespuesta.statusExec = true;
+                objRespuesta.msg = "Consulta exitosa";
+                objRespuesta.flag = 1;
+                objRespuesta.datos = JObject.FromObject(ds);
+            }
+            catch (Exception ex)
+            {
+                objRespuesta.statusExec = false;
+                objRespuesta.msg = ex.Message;
+                objRespuesta.flag = 0;
+            }
+            return objRespuesta;
+        }
+
+        [HttpGet]
+        [Route("{id}")]
+        public clsApiStatus ObtenerIncidencia(int id)
+        {
+            clsApiStatus objRespuesta = new clsApiStatus();
+            try
+            {
+                clsIncidencias obj = new clsIncidencias();
+                DataSet ds = obj.ObtenerIncidenciaPorId(id);
+
+                objRespuesta.statusExec = true;
+                objRespuesta.msg = "Consulta exitosa";
+                objRespuesta.flag = 1;
+                objRespuesta.datos = JObject.FromObject(ds);
+            }
+            catch (Exception ex)
+            {
+                objRespuesta.statusExec = false;
+                objRespuesta.msg = ex.Message;
+                objRespuesta.flag = 0;
+            }
+            return objRespuesta;
+        }
+
+        [HttpPut]
+        [Route("{id}/estado")]
+        public clsApiStatus ActualizarEstado(int id, [FromBody] clsIncidencias model)
+        {
+            clsApiStatus objRespuesta = new clsApiStatus();
+            try
+            {
+                model.id = id;
+                DataSet ds = model.ActualizarEstadoIncidencia();
+
+                objRespuesta.statusExec = true;
+                objRespuesta.msg = "Estado actualizado correctamente";
+                objRespuesta.flag = 1;
+                objRespuesta.datos = JObject.FromObject(ds);
+            }
+            catch (Exception ex)
+            {
+                objRespuesta.statusExec = false;
+                objRespuesta.msg = ex.Message;
+                objRespuesta.flag = 0;
+            }
             return objRespuesta;
         }
     }
