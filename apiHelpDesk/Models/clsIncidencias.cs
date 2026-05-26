@@ -80,12 +80,12 @@ namespace apiHelpDesk.Models
 
         public DataSet vwPanelIncidencias()
         {
-            string cadSQL = "select * from vwPanelIncidencias";
+            string cadSQL = "select * from vwIncidencias";
 
             MySqlConnection cnn = new MySqlConnection(cadConn);
             MySqlDataAdapter da = new MySqlDataAdapter(cadSQL, cnn);
             DataSet ds = new DataSet();
-            da.Fill(ds, "vwPanelIncidencias");
+            da.Fill(ds, "vwIncidencias");
             return ds;
         }
 
@@ -103,7 +103,7 @@ namespace apiHelpDesk.Models
         public DataSet ObtenerIncidenciaPorId(int idIncidencia)
         {
             // Corregido con parámetros seguros
-            string cadSQL = "SELECT * FROM vwPanelIncidencias WHERE id_incidencia = ?idIncidencia";
+            string cadSQL = "SELECT * FROM vwIncidencias WHERE id_incidencia = ?idIncidencia";
 
             using (MySqlConnection cnn = new MySqlConnection(cadConn))
             using (MySqlCommand cmd = new MySqlCommand(cadSQL, cnn))
