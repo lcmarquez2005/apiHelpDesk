@@ -122,21 +122,39 @@ namespace apiHelpDesk.Models
         public DataSet ActualizarEstadoIncidencia()
         {
             string estadoDB = this.status.ToString().Replace("_", " ");
-
-            // Uso del procedimiento almacenado spActualizarEstadoIncidencia
-            string cadSQL = "CALL spActualizarEstadoIncidencia(" 
-                            + this.id + ", '" 
-                            + estadoDB + "', '" 
-                            + this.observaciones + "');";
+            DataSet ds = new DataSet();
 
             try
             {
                 using (MySqlConnection cnn = new MySqlConnection(cadConn))
                 {
-                    MySqlDataAdapter da = new MySqlDataAdapter(cadSQL, cnn);
-                    DataSet ds = new DataSet();
-                    da.Fill(ds, "updateEstado");
-                    return ds;
+                    using (MySqlCommand cmd = new MySqlCommand("spActualizarEstadoIncidencia", cnn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        // Parámetros de entrada
+                        cmd.Parameters.AddWithValue("p_id_incidencia", this.id);
+                        cmd.Parameters.AddWithValue("p_nuevo_estado", estadoDB);
+                        cmd.Parameters.AddWithValue("p_observaciones", this.observaciones);
+
+                        // Parámetro de salida
+                        MySqlParameter outParam = new MySqlParameter("p_status", MySqlDbType.Int32);
+                        outParam.Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add(outParam);
+
+                        cnn.Open();
+                        cmd.ExecuteNonQuery();
+
+                        // Recuperar el valor del parámetro de salida y ponerlo en un DataTable para el DataSet
+                        int statusCode = Convert.ToInt32(outParam.Value);
+                        
+                        DataTable dt = new DataTable("updateEstado");
+                        dt.Columns.Add("status", typeof(int));
+                        dt.Rows.Add(statusCode);
+                        ds.Tables.Add(dt);
+                        
+                        return ds;
+                    }
                 }
             }
             catch (Exception ex)
